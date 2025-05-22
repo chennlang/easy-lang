@@ -1,0 +1,19 @@
+
+# 忽略所有 .env 文件
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+.env.staging
+
+# 忽略所有 .log 文件
+*.log
+
+# 忽略python环境
+venv/
+__pycache__
+*.pyc
+
+node_modules/
+dist/
