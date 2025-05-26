@@ -23,10 +23,19 @@ yarn add easy-lang
 
 ## 快速开始
 
+## 建议的目录结构
+
+```txt
+locales/
+  - index.ts
+  - translation.json
+```
+
 ### 1. 定义翻译文件
 
+translation.json
+
 ```json
-// translation.json
 {
   "错误": {
     "zh_CN": "错误",
@@ -61,6 +70,14 @@ i18n.changeLang("zh_CN");
 ```
 
 ### 3. React 项目
+
+```shell
+pnpm add @easy-lang/react
+# 或
+npm install @easy-lang/react
+# 或
+yarn add @easy-lang/react
+```
 
 > React 项目需额外安装 `zustand` 作为 peerDependency。
 
@@ -104,7 +121,7 @@ function App() {
 
 ```json
 {
-  "欢迎": {
+  "欢迎, {name}": {
     "en": "Welcome, {name}!"
   }
 }
@@ -113,7 +130,7 @@ function App() {
 调用：
 
 ```ts
-i18n.$t("欢迎", { name: "Tom" }); // => "Welcome, Tom!"
+i18n.$t("欢迎, {name}", { name: "Tom" }); // => "Welcome, Tom!"
 ```
 
 ## 自动收集未翻译 key

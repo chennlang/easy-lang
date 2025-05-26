@@ -20,7 +20,11 @@ interface I18nManagerProps<T, L> {
       const untranslatedList: string[] = [];
   
       function getCurrentLang() {
-          return localStorage.getItem('lang') as L || defaultLang
+          if (typeof window !== 'undefined') {
+              return localStorage.getItem('lang') as L || defaultLang
+          } else {
+            return defaultLang
+          }
       }
   
       function _$t (text: keyof T, params: Record<string, any> = {}, setLang?: L): string {
@@ -45,7 +49,9 @@ interface I18nManagerProps<T, L> {
       }
   
       function changeLang(lang: L) {
-          localStorage.setItem('lang', lang)
+          if (typeof window !== 'undefined') {
+              localStorage.setItem('lang', lang)
+          }
           autoReload && location.reload()
       }
   

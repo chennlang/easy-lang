@@ -12,7 +12,6 @@ type LangStoreProps = {
 export const useLangStore = create<LangStoreProps>()(persist((set) => ({
     currentLang: undefined,
     changeLang: (lang: string) => {
-        localStorage.setItem('lang', lang)
         set((state) => ({ currentLang: lang }))
     },
 }), {
