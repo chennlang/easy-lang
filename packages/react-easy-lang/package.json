@@ -1,7 +1,7 @@
 {
   "name": "@easy-lang/react",
   "description": "React bindings for easy-lang",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
