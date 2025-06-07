@@ -1,5 +1,6 @@
 {
   "name": "easy-lang-monorepo",
+  "packageManager": "pnpm@10.10.0",
   "private": true,
   "scripts": {
     "build": "pnpm -r build",
@@ -8,12 +9,12 @@
     "test": "pnpm -r test"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
-    "typescript": "^5.0.0"
+    "@types/node": "^20.17.50",
+    "typescript": "^5.8.3",
+    "vsce": "^2.15.0"
   },
   "dependencies": {
-    "easy-lang": "link:packages/easy-lang",
-    "@easy-lang/react": "link:packages/react-easy-lang"
-  },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+    "@easy-lang/react": "link:packages/react-easy-lang",
+    "easy-lang": "link:packages/easy-lang"
+  }
 }

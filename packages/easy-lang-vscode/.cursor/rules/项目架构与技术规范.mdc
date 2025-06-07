@@ -1,0 +1,51 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Easy Lang VSCode 插件项目架构与技术规范
+
+## 1. 项目结构
+
+- [src/extension.ts](mdc:src/extension.ts)：插件入口，负责激活、命令注册、侧边栏初始化。
+- [src/sidebarProvider.ts](mdc:src/sidebarProvider.ts)：侧边栏 TreeView 的数据提供者，负责展示、刷新、批量翻译等逻辑。
+- [src/scanner.ts](mdc:src/scanner.ts)：扫描项目源码，提取国际化 key，读取/写入 translation.json。
+- [src/translator.ts](mdc:src/translator.ts)：自动翻译实现，支持 Google 和自定义模型两种模式。
+- [package.json](mdc:package.json)：插件元信息、命令、视图、配置项声明、依赖管理。
+- [tsconfig.json](mdc:tsconfig.json)：TypeScript 编译配置，强类型、严格模式。
+- [README.md](mdc:README.md)：项目简介、功能说明、用法。
+
+## 2. 核心功能
+
+- 扫描 js/ts/vue 文件，提取 $t('') 或 $("") 包裹的国际化 key，自动忽略 .gitignore 中排除的文件。
+- 读取 translation.json，区分已翻译和未翻译 key。
+- 侧边栏 TreeView 展示未翻译/已翻译 key，支持刷新和一键全部翻译。
+- 支持 Google 免费翻译和自定义模型翻译。
+- 支持自定义 translation.json 路径、目标语言、翻译模式、模型参数等配置。
+
+## 3. 核心技术
+
+- VSCode 扩展 API（TreeView、命令注册、配置项、通知等）
+- TypeScript 严格模式
+- node-fetch（网络请求）
+- ignore（.gitignore 规则解析）
+
+## 4. 代码风格
+
+- 使用 TypeScript，严格类型检查（strict: true）
+- 采用 async/await 处理异步
+- 统一使用 ES2020 语法
+- 变量/函数/类命名采用小驼峰、大驼峰规范
+- 代码注释清晰，关键逻辑有注释
+
+## 5. 代码规范
+
+- 目录结构清晰，src 下按功能拆分模块
+- 业务逻辑与 UI 展示分离
+- 配置项集中在 package.json 的 contributes.configuration
+- 所有文件均需类型声明，避免 any
+- 依赖管理通过 package.json，开发依赖与生产依赖分离
+
+## 6. 参考文件
+
+- [easy-lang-vscode需求文档.mdc](mdc:.cursor/rules/easy-lang-vscode需求文档.mdc)
