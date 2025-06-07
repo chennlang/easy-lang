@@ -1,5 +1,7 @@
 packages:
   - packages/*
+  - "!**/test/**"
+
 overrides:
   easy-lang: "link:packages/easy-lang"
   "@easy-lang/react": "link:packages/react-easy-lang"

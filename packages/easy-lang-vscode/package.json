@@ -1,0 +1,140 @@
+{
+  "name": "easy-lang-vscode",
+  "displayName": "Easy Lang",
+  "description": "配合 easy-lang 的 VSCode 插件，自动收集和翻译国际化文本。",
+  "version": "0.0.2",
+  "main": "./dist/extension.js",
+  "scripts": {
+    "compile": "tsc -p .",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "pnpm run compile && pnpm exec vsce package"
+  },
+  "engines": {
+    "vscode": ">=1.70.0"
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "easy-lang.refresh",
+        "title": "Easy Lang: 刷新",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "easy-lang.translateAll",
+        "title": "Easy Lang: 全部翻译",
+        "icon": "$(globe)"
+      },
+      {
+        "command": "easy-lang.openSettings",
+        "title": "Easy Lang: 打开设置页面",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "easy-lang.gotoLocation",
+        "title": "Easy Lang: 跳转到位置"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "easy-lang.openSettings",
+          "when": "view == easy-lang-sidebar",
+          "group": "navigation"
+        },
+        {
+          "command": "easy-lang.refresh",
+          "when": "view == easy-lang-sidebar",
+          "group": "navigation"
+        },
+        {
+          "command": "easy-lang.translateAll",
+          "when": "view == easy-lang-sidebar",
+          "group": "navigation"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "easy-lang",
+          "title": "Easy Lang",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "easy-lang": [
+        {
+          "id": "easy-lang-sidebar",
+          "name": "Easy Lang"
+        }
+      ]
+    },
+    "configuration": {
+      "type": "object",
+      "title": "Easy Lang 配置",
+      "properties": {
+        "easyCode.translationPath": {
+          "type": "string",
+          "default": "locales/translation.json",
+          "description": "translation.json 文件路径（相对工作区根目录）"
+        },
+        "easyCode.translateMode": {
+          "type": "string",
+          "enum": [
+            "google",
+            "model"
+          ],
+          "default": "google",
+          "description": "自动翻译模式：google 或 model"
+        },
+        "easyCode.model.endpoint": {
+          "type": "string",
+          "default": "",
+          "description": "模型翻译接口地址"
+        },
+        "easyCode.model.model": {
+          "type": "string",
+          "default": "",
+          "description": "模型名称"
+        },
+        "easyCode.model.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "模型 API Key"
+        },
+        "easyCode.targetLangs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "en",
+            "zh_CN",
+            "zh_HK"
+          ],
+          "description": "目标语言列表"
+        }
+      }
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/node-fetch": "^2.6.12",
+    "@types/vscode": "^1.70.0",
+    "@vscode/vsce": "^3.4.2",
+    "typescript": "^5.0.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "files": [
+    "dist",
+    "README.md",
+    "package.json",
+    "media"
+  ]
+}
