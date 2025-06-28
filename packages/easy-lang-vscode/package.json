@@ -2,6 +2,7 @@
   "name": "easy-lang-vscode",
   "displayName": "Easy Lang",
   "description": "配合 easy-lang 的 VSCode 插件，自动收集和翻译国际化文本。",
+  "repository": "https://github.com/chennlang/easy-lang",
   "version": "0.0.2",
   "main": "./dist/extension.js",
   "scripts": {
@@ -130,11 +131,12 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "files": [
     "dist",
     "README.md",
     "package.json",
-    "media"
+    "media",
+    "LICENSE.md"
   ]
 }
