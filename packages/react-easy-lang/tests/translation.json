@@ -1,17 +1,22 @@
 {
-  "错误": {
-    "zh_CN": "错误",
-    "zh_HK": "錯誤",
-    "en": "Error"
-  },
-  "保存": {
-    "zh_CN": "保存",
-    "zh_HK": "保存",
-    "en": "Save"
-  },
-  "保存成功": {
-    "zh_CN": "保存成功",
-    "zh_HK": "保存成功",
-    "en": "Save Successfully"
-  }
+    "default": {
+        "hello": {
+            "zh-CN": "你好",
+            "en-US": "Hello"
+        },
+        "goodbye": {
+            "zh-CN": "再见",
+            "en-US": "Goodbye"
+        }
+    },
+    "custom": {
+        "welcome": {
+            "zh-CN": "欢迎 {name}",
+            "en-US": "Welcome {name}"
+        },
+        "test": {
+            "zh-CN": "测试",
+            "en-US": "Test"
+        }
+    }
 }

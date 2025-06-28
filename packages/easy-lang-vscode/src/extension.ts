@@ -40,8 +40,8 @@ export function activate(context: vscode.ExtensionContext) {
 
   // 注册刷新命令
   context.subscriptions.push(
-    vscode.commands.registerCommand("easy-lang.refresh", () => {
-      sidebarProvider.refresh();
+    vscode.commands.registerCommand("easy-lang.refresh", async () => {
+      await sidebarProvider.refresh();
       vscode.window.showInformationMessage("已刷新国际化数据");
     })
   );
