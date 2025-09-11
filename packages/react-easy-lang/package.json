@@ -19,7 +19,8 @@
         "build": "npm run clean && rollup -c",
         "type-check": "tsc --noEmit",
         "cl-login": "npm login  --registry=https://registry.npmjs.org/",
-        "cl-publish": "npm publish  --registry=https://registry.npmjs.org/ --access public"
+        "cl-publish": "npm publish  --registry=https://registry.npmjs.org/ --access public",
+        "test": "vitest"
     },
     "devDependencies": {
         "@rollup/plugin-commonjs": "^25.0.0",
