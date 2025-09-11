@@ -22,7 +22,10 @@ export function activate(context: vscode.ExtensionContext) {
     if (fs.existsSync(configPath)) {
         try {
             const configData = JSON.parse(fs.readFileSync(configPath, "utf8"));
-            translationPath = configData.translationPath || "";
+            translationPath = path.join(
+                workspaceRoot,
+                configData.translationPath || ""
+            );
         } catch (e) {
             translationPath = "";
         }
@@ -131,6 +134,50 @@ export function activate(context: vscode.ExtensionContext) {
             SettingsPanel.createOrShow(context.extensionUri);
         })
     );
+
+    // 设置文件监听器
+    context.subscriptions.push(
+        vscode.window.onDidChangeActiveTextEditor((editor) => {
+            if (editor) {
+                sidebarProvider.refreshCurrentFileData(
+                    editor.document.uri.fsPath
+                );
+            } else {
+                sidebarProvider.refreshCurrentFileData();
+            }
+        })
+    );
+
+    // 设置文件内容变化监听器
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeTextDocument((event) => {
+            const activeEditor = vscode.window.activeTextEditor;
+            if (activeEditor && event.document === activeEditor.document) {
+                // 使用防抖避免频繁更新，延迟500ms
+                setTimeout(() => {
+                    const currentActiveEditor = vscode.window.activeTextEditor;
+                    if (
+                        currentActiveEditor &&
+                        currentActiveEditor.document === event.document
+                    ) {
+                        sidebarProvider.refreshCurrentFileData(
+                            event.document.uri.fsPath
+                        );
+                    }
+                }, 500);
+            }
+        })
+    );
+
+    // 初始化当前文件数据
+    const activeEditor = vscode.window.activeTextEditor;
+    if (activeEditor) {
+        sidebarProvider.refreshCurrentFileData(
+            activeEditor.document.uri.fsPath
+        );
+    } else {
+        sidebarProvider.refreshCurrentFileData();
+    }
 }
 
 export function deactivate() {}

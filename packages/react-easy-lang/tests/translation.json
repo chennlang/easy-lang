@@ -7,6 +7,10 @@
         "goodbye": {
             "zh-CN": "再见",
             "en-US": "Goodbye"
+        },
+        "test-var": {
+            "zh-CN": "你好 {name}",
+            "en-US": "Hello {name}"
         }
     },
     "custom": {

@@ -40,6 +40,7 @@ function App() {
             <button onClick={() => changeLang("zh-CN")}>zh</button>
             <div data-testid="lang">{currentLang}</div>
             <div data-testid="hello">{$t("hello")}</div>
+            <div data-testid="hello-var">{$t("hello-var", { name: "world" })}</div>
         </div>
     );
 }
@@ -48,4 +49,5 @@ test("App renders and shows translation", () => {
     render(<App />);
     expect(screen.getByTestId("lang").textContent).toBe("en-US");
     expect(screen.getByTestId("hello").textContent).toBe("Hello");
+    expect(screen.getByTestId("hello-var").textContent).toBe("Hello world");
 });

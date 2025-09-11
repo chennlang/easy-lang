@@ -3,7 +3,7 @@
     "displayName": "Easy Lang",
     "description": "配合 easy-lang 的 VSCode 插件，自动收集和翻译国际化文本。",
     "repository": "https://github.com/chennlang/easy-lang",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "main": "./dist/extension.js",
     "scripts": {
         "compile": "tsc -p .",
@@ -55,7 +55,8 @@
                     "when": "view == easy-lang-sidebar",
                     "group": "navigation"
                 }
-            ]
+            ],
+            "view/item/context": []
         },
         "viewsContainers": {
             "activitybar": [
