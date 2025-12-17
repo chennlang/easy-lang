@@ -1,14 +1,15 @@
-# easy-lang
+# Easy Lang 现代化的国际化解决方案
 
-一个易用、低侵入的多语言翻译工具，适合中大型前端项目的国际化需求。
+Easy Lang 是一个低侵入性的、简单的、类型安全的多语言翻译工具。它本质上与框架无关，是一个纯 TypeScript 工具，可以在 Vue、React、Angular 等支持原生 JS/TS 的项目中使用。
 
 ## 特性
 
-- 简单易用，API 友好
-- 支持多语言切换
-- 自动收集未翻译的 key，便于补全
-- 支持变量替换
-- 轻量无第三方依赖
+- 🎯 完整的 TypeScript 类型支持
+- 🔄 支持扁平和模块化两种翻译模式
+- 🌍 灵活的多语言切换
+- 🔍 自动收集未翻译的文本
+- 🎨 支持变量替换
+- 📦 轻量无第三方依赖
 
 ## 安装
 
@@ -20,79 +21,162 @@ npm install easy-lang
 yarn add easy-lang
 ```
 
-## 快速开始
+## 使用模式
 
-### 1. 定义翻译文件
+Easy Lang 支持两种使用模式：扁平模式和模块化模式。你可以根据项目规模和需求选择合适的模式。
 
-```json
-// translation.json
-{
-  "错误": {
-    "zh_CN": "错误",
-    "zh_HK": "錯誤",
-    "en": "Error"
+### 1. 扁平模式
+
+适用于小型项目或翻译文件较少的场景。
+
+```typescript
+// 定义翻译文件
+const translations = {
+  '你好': {
+    "zh-CN": "你好",
+    "en-US": "Hello",
   },
-  "保存": {
-    "zh_CN": "保存",
-    "zh_HK": "保存",
-    "en": "Save"
-  }
-}
+  '再见': {
+    "zh-CN": "再见",
+    "en-US": "Goodbye",
+  },
+} as const;
+
+// 创建翻译工具
+const i18n = createI18nTool<typeof translations, "zh-CN" | "en-US">({
+  defaultLang: "zh-CN",
+  langs: ["zh-CN", "en-US"],
+  translations,
+  autoReload: false, // 切换语言时是否自动刷新页面
+});
+
+// 使用翻译
+i18n.$t('你好');                    // => "你好"
+i18n.$t('再见', {}, 'en-US');      // => "Goodbye"
 ```
 
-### 2. TS 项目
+### 2. 模块化模式
 
-```ts
-import { createI18nTool } from "easy-lang";
-import translations from "./translation.json";
+适用于大型项目或需要按模块组织翻译的场景。
 
-const i18n = createI18nTool<typeof translations, "zh_CN" | "zh_HK" | "en">({
-  defaultLang: "en",
-  langs: ["zh_CN", "zh_HK", "en"],
+```typescript
+// 定义模块化翻译文件
+const translations = {
+  default: {
+    '你好': {
+      "zh-CN": "你好",
+      "en-US": "Hello",
+    },
+  },
+  custom: {
+    '欢迎 {name}': {
+      "zh-CN": "欢迎 {name}",
+      "en-US": "Welcome {name}",
+    },
+    '测试': {
+      "zh-CN": "测试",
+      "en-US": "Test",
+    },
+  },
+} as const;
+
+// 创建翻译工具
+const i18n = createI18nTool<typeof translations, "zh-CN" | "en-US">({
+  defaultLang: "zh-CN",
+  langs: ["zh-CN", "en-US"],
   translations,
 });
 
-// 获取翻译
-i18n.$t("错误"); // => "Error"
+// 方式一：直接使用带模块的翻译
+i18n.$t('欢迎 {name}', { name: '张三', module: 'custom' }); // => "欢迎 张三"
+i18n.$t('测试', { module: 'custom' });            // => "测试"
 
-// 切换语言
-i18n.changeLang("zh_CN");
+// 方式二：创建模块专用的翻译函数
+const $t_custom = i18n.$module('custom');
+$t_custom('测试');                                         // => "测试"
+$t_custom('欢迎 {name}', { name: 'John' });      // => "欢迎 John"
 ```
 
-## 变量替换
+## API 参考
 
-支持在翻译文本中使用 `{变量名}`，如：
+### createI18nTool
 
-```json
-{
-  "欢迎": {
-    "en": "Welcome, {name}!"
-  }
+创建翻译工具的核心方法，返回一个包含以下方法和属性的对象：
+
+```typescript
+interface I18nTool<T, L> {
+  // 核心翻译方法
+  $t: (text: string, contexts?: Record<string, any>, currentLang?: L) => string;
+  
+  // 创建模块专用翻译函数
+  $module: <M extends keyof T>(module: M) => (text: string, contexts?: Record<string, any>, currentLang?: L) => string;
+  
+  // 切换语言
+  changeLang: (lang: L) => void;
+  
+  // 获取未翻译的文本列表
+  untranslatedList: string[];
+  
+  // 支持的语言列表
+  langs: L[];
+  
+  // 默认语言
+  defaultLang: L;
+  
+  // 获取当前语言
+  getCurrentLang: () => L;
 }
 ```
 
-调用：
+### 配置选项
 
-```ts
-i18n.$t("欢迎", { name: "Tom" }); // => "Welcome, Tom!"
+```typescript
+interface I18nCreateProps<T, L> {
+  // 默认语言
+  defaultLang: L;
+  
+  // 支持的语言列表
+  langs: L[];
+  
+  // 翻译对象
+  translations: T;
+  
+  // 切换语言时是否自动刷新页面
+  autoReload?: boolean;
+}
 ```
 
-## 自动收集未翻译 key
+## 高级特性
 
-未翻译的 key 会自动收集到 `untranslatedList`，便于后续补全。
+### 1. 自动收集未翻译文本
 
-## 测试
+Easy Lang 会自动收集未翻译的文本，你可以通过 `untranslatedList` 获取：
 
-本项目使用 [vitest](https://vitest.dev/) 进行单元测试。
-
-```bash
-pnpm test
+```typescript
+console.log(i18n.untranslatedList); // 显示所有未翻译的文本列表
 ```
 
-## 构建
+### 2. 语言切换与持久化
 
-```bash
-pnpm build
+Easy Lang 会自动将当前语言保存在 localStorage 中：
+
+```typescript
+// 切换语言（会自动保存到 localStorage）
+i18n.changeLang("en-US");
+
+// 获取当前语言
+const currentLang = i18n.getCurrentLang(); // 优先从 localStorage 读取
+```
+
+### 3. 自动页面刷新
+
+可以配置在切换语言时自动刷新页面：
+
+```typescript
+const i18n = createI18nTool({
+  // ...其他配置
+  autoReload: true, // 切换语言时自动刷新页面
+});
 ```
 
 ## 许可证
