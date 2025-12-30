@@ -143,6 +143,9 @@ interface I18nCreateProps<T, L> {
   
   // 切换语言时是否自动刷新页面
   autoReload?: boolean;
+  
+  // 自定义 localstorage 存储的 key
+  storageKey?: string;
 }
 ```
 

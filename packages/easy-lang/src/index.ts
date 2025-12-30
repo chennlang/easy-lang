@@ -4,6 +4,7 @@ export interface I18nCreateProps<T, L> {
     translations: T;
     // 改变语言自动更新页面
     autoReload?: boolean;
+    storageKey?: string;
 }
 
 // 基础类型定义
@@ -73,7 +74,7 @@ export function createI18nTool<
     getCurrentLang: () => L;
 } {
     let targetTranslations: ModuleTranslations
-    const { defaultLang, langs, translations, autoReload = true } = options;
+    const { defaultLang, langs, translations, autoReload = true, storageKey = 'lang' } = options;
 
     const untranslatedList: string[] = [];
 
@@ -89,7 +90,7 @@ export function createI18nTool<
     // 获取当前语言
     function getCurrentLang() {
         if (typeof window !== "undefined") {
-            return (localStorage.getItem("lang") as L) || defaultLang;
+            return (localStorage.getItem(storageKey) as L) || defaultLang;
         } else {
             return defaultLang;
         }
@@ -119,7 +120,7 @@ export function createI18nTool<
 
     function changeLang(lang: L) {
         if (typeof window !== "undefined") {
-            localStorage.setItem("lang", lang);
+            localStorage.setItem(storageKey, lang);
         }
         autoReload && location.reload();
     }
