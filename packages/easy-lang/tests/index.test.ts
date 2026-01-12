@@ -59,6 +59,10 @@ const testModuleTranslations = {
             "zh-CN": "测试",
             "en-US": "Test",
         },
+        '欢迎 {name1}': {
+            "zh-CN": "欢迎 {name1}",
+            "en-US": "Welcome {name1}",
+        },
     },
 } as const;
 
@@ -117,6 +121,8 @@ describe("I18n Tool 核心功能测试", () => {
         test("模块化模式 - 变量替换", () => {
             expect(i18nToolModule.$t("欢迎 {name}", { name: "张三", module: "custom" })).toBe("欢迎 张三");
             expect(i18nToolModule.$t("欢迎 {name}", { name: "John", module: "custom" }, "en-US")).toBe("Welcome John");
+            // 未定义的原样返回
+            expect(i18nToolModule.$t("欢迎 {name1}", { module: "custom" }, "en-US")).toBe("Welcome {name1}");
         });
     });
 

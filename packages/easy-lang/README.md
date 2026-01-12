@@ -40,6 +40,10 @@ const translations = {
     "zh-CN": "再见",
     "en-US": "Goodbye",
   },
+  '你好 {name}': {
+    "zh-CN": "你好 {name}",
+    "en-US": "Hello {name}",
+  },
 } as const;
 
 // 创建翻译工具
@@ -52,7 +56,9 @@ const i18n = createI18nTool<typeof translations, "zh-CN" | "en-US">({
 
 // 使用翻译
 i18n.$t('你好');                    // => "你好"
-i18n.$t('再见', {}, 'en-US');      // => "Goodbye"
+
+// 变量翻译
+i18n.$t('你好 {name}', { name: 'Ell' }); // => 你好 Ell
 ```
 
 ### 2. 模块化模式

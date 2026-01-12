@@ -113,8 +113,8 @@ export function createI18nTool<
         }
 
         // 替换变量
-        return translatedText.replace(/\{([^}]+)\}/g, (_: string, p1: string) => {
-            return contexts[p1];
+        return translatedText.replace(/\{([^}]+)\}/g, (match: string, p1: string) => {
+            return contexts[p1] || match;
         });
     };
 
