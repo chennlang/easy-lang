@@ -114,7 +114,7 @@ export function createI18nTool<
 
         // 替换变量
         return translatedText.replace(/\{([^}]+)\}/g, (match: string, p1: string) => {
-            return contexts[p1] || match;
+            return contexts[p1] === undefined ? match : contexts[p1];
         });
     };
 

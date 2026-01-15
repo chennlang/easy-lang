@@ -123,6 +123,7 @@ describe("I18n Tool 核心功能测试", () => {
             expect(i18nToolModule.$t("欢迎 {name}", { name: "John", module: "custom" }, "en-US")).toBe("Welcome John");
             // 未定义的原样返回
             expect(i18nToolModule.$t("欢迎 {name1}", { module: "custom" }, "en-US")).toBe("Welcome {name1}");
+            expect(i18nToolModule.$t("欢迎 {name1}", { module: "custom", name1: 0 }, "en-US")).toBe("Welcome 0");
         });
     });
 
