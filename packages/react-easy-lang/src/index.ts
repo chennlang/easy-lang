@@ -35,7 +35,6 @@ export function createReactI18nTool<
         getCurrentLang,
         untranslatedList,
         langs,
-        defaultLang,
     } = i18n;
 
     type Lang = (typeof langs)[number];
@@ -48,7 +47,7 @@ export function createReactI18nTool<
         }, [currentLang]);
 
     function useTranslate() {
-        const { currentLang = defaultLang } = useLangStore();
+        const { currentLang = i18n.defaultLang } = useLangStore();
         const memoGetT = memoizedT(currentLang as Lang);
         // 获取翻译函数
         const getT = () => memoGetT;

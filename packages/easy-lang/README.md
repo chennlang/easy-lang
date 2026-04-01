@@ -119,6 +119,9 @@ interface I18nTool<T, L> {
   
   // 切换语言
   changeLang: (lang: L) => void;
+
+  // 更新运行时配置
+  configure: (config: I18nConfigureProps<L>) => void;
   
   // 获取未翻译的文本列表
   untranslatedList: string[];
@@ -150,8 +153,34 @@ interface I18nCreateProps<T, L> {
   // 切换语言时是否自动刷新页面
   autoReload?: boolean;
   
-  // 自定义 localstorage 存储的 key
+  // 自定义 localstorage 存储的 key，默认值为 "lang"
   storageKey?: string;
+
+  // 自定义语言存储策略，不传时默认使用 localStorage
+  storage?: I18nStorage<L>;
+}
+
+interface I18nStorage<L> {
+  getLang: (context: {
+    defaultLang: L;
+    langs: L[];
+    storageKey: string;
+  }) => L | null | undefined;
+  setLang?: (
+    lang: L,
+    context: {
+      defaultLang: L;
+      langs: L[];
+      storageKey: string;
+    }
+  ) => void;
+}
+
+interface I18nConfigureProps<L> {
+  defaultLang?: L;
+  autoReload?: boolean;
+  storageKey?: string;
+  storage?: I18nStorage<L>;
 }
 ```
 
@@ -167,7 +196,7 @@ console.log(i18n.untranslatedList); // 显示所有未翻译的文本列表
 
 ### 2. 语言切换与持久化
 
-Easy Lang 会自动将当前语言保存在 localStorage 中：
+Easy Lang 默认会将当前语言保存在 localStorage 中，key 为 `lang`：
 
 ```typescript
 // 切换语言（会自动保存到 localStorage）
@@ -177,7 +206,61 @@ i18n.changeLang("en-US");
 const currentLang = i18n.getCurrentLang(); // 优先从 localStorage 读取
 ```
 
-### 3. 自动页面刷新
+### 3. 自定义语言存储策略
+
+可以通过 `storage` 自定义语言读取和写入逻辑：
+
+```typescript
+const i18n = createI18nTool({
+  defaultLang: "zh-CN",
+  langs: ["zh-CN", "en-US"],
+  translations,
+  storage: {
+    getLang({ defaultLang, langs, storageKey }) {
+      const isValidLang = (lang?: string | null): lang is "zh-CN" | "en-US" =>
+        !!lang && langs.includes(lang as "zh-CN" | "en-US");
+
+      const urlLang = new URLSearchParams(location.search).get("lang");
+      const storageLang = localStorage.getItem(storageKey);
+
+      if (window.self !== window.top) {
+        return isValidLang(urlLang)
+          ? urlLang
+          : isValidLang(storageLang)
+            ? storageLang
+            : defaultLang;
+      }
+
+      return isValidLang(storageLang) ? storageLang : defaultLang;
+    },
+    setLang(lang, { storageKey }) {
+      localStorage.setItem(storageKey, lang);
+    },
+  },
+});
+```
+
+### 4. 运行时更新配置
+
+如果语言策略需要在实例创建后再注入，可以通过 `configure` 更新运行时配置：
+
+```typescript
+i18n.configure({
+  autoReload: false,
+  storageKey: "tenant-lang",
+  defaultLang: "en-US",
+  storage: {
+    getLang() {
+      return "en-US";
+    },
+    setLang(lang) {
+      console.log("set lang", lang);
+    },
+  },
+});
+```
+
+### 5. 自动页面刷新
 
 可以配置在切换语言时自动刷新页面：
 

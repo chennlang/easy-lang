@@ -60,6 +60,14 @@ const i18n = createI18nTool<typeof Transform, "zh" | "zh_HK" | "en">({
   defaultLang: "en",
   langs: ["zh_CN", "zh_HK", "en"],
   translations,
+  storage: {
+    getLang({ storageKey }) {
+      return localStorage.getItem(storageKey) as "zh" | "zh_HK" | "en" | null;
+    },
+    setLang(lang, { storageKey }) {
+      localStorage.setItem(storageKey, lang);
+    },
+  },
 });
 
 // 获取翻译
@@ -67,7 +75,10 @@ i18n.$t("错误"); // => "Error"
 
 // 切换语言
 i18n.changeLang("zh_CN");
+i18n.configure({ autoReload: false, storageKey: "tenant-lang" });
 ```
+
+> 默认会使用 `localStorage` 中的 `lang` 作为语言存储 key，可通过 `storageKey` 自定义。
 
 ### 3. React 项目
 

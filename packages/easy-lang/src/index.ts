@@ -5,6 +5,27 @@ export interface I18nCreateProps<T, L> {
     // 改变语言自动更新页面
     autoReload?: boolean;
     storageKey?: string;
+    storage?: I18nStorage<L>;
+}
+
+export interface I18nStorage<L> {
+    getLang: (context: {
+        defaultLang: L;
+        langs: L[];
+        storageKey: string;
+    }) => L | null | undefined;
+    setLang?: (lang: L, context: {
+        defaultLang: L;
+        langs: L[];
+        storageKey: string;
+    }) => void;
+}
+
+export interface I18nConfigureProps<L> {
+    defaultLang?: L;
+    autoReload?: boolean;
+    storageKey?: string;
+    storage?: I18nStorage<L>;
 }
 
 // 基础类型定义
@@ -68,15 +89,31 @@ export function createI18nTool<
     $t: I18nFnType<MT, L>;
     $module: <M extends keyof MT>(module: M) => ModuleI18nFnType<MT, L, M>;
     changeLang: (lang: L) => void;
+    configure: (config: I18nConfigureProps<L>) => void;
     untranslatedList: string[];
     langs: L[];
     defaultLang: L;
     getCurrentLang: () => L;
 } {
     let targetTranslations: ModuleTranslations
-    const { defaultLang, langs, translations, autoReload = true, storageKey = 'lang' } = options;
+    const {
+        defaultLang,
+        langs,
+        translations,
+        autoReload = true,
+        storageKey = 'lang',
+        storage,
+    } = options;
 
     const untranslatedList: string[] = [];
+    const runtimeConfig: Required<Pick<I18nCreateProps<T, L>, "defaultLang" | "autoReload" | "storageKey">> & {
+        storage: I18nStorage<L> | undefined;
+    } = {
+        defaultLang,
+        autoReload,
+        storageKey,
+        storage,
+    };
 
     // 如果翻译对象是模块化翻译对象，则转换为模块化翻译对象
     if (!isModuleTranslations(translations)) {
@@ -87,13 +124,43 @@ export function createI18nTool<
         targetTranslations = translations
     }
 
+    const defaultStorage: I18nStorage<L> = {
+        getLang({ storageKey }) {
+            if (typeof window === "undefined") {
+                return undefined;
+            }
+            return (localStorage.getItem(storageKey) as L | null) ?? undefined;
+        },
+        setLang(lang, { storageKey }) {
+            if (typeof window !== "undefined") {
+                localStorage.setItem(storageKey, lang);
+            }
+        },
+    };
+
+    function getStorageContext() {
+        return {
+            defaultLang: runtimeConfig.defaultLang,
+            langs,
+            storageKey: runtimeConfig.storageKey,
+        };
+    }
+
+    function getStorage(): I18nStorage<L> {
+        return runtimeConfig.storage || defaultStorage;
+    }
+
+    function normalizeLang(lang?: L | null): L | undefined {
+        if (!lang || !langs.includes(lang)) {
+            return undefined;
+        }
+        return lang;
+    }
+
     // 获取当前语言
     function getCurrentLang() {
-        if (typeof window !== "undefined") {
-            return (localStorage.getItem(storageKey) as L) || defaultLang;
-        } else {
-            return defaultLang;
-        }
+        const lang = normalizeLang(getStorage().getLang(getStorageContext()));
+        return lang || runtimeConfig.defaultLang;
     }
 
     // 翻译
@@ -119,10 +186,35 @@ export function createI18nTool<
     };
 
     function changeLang(lang: L) {
-        if (typeof window !== "undefined") {
-            localStorage.setItem(storageKey, lang);
+        getStorage().setLang?.(lang, getStorageContext());
+        if (runtimeConfig.autoReload && typeof location !== "undefined") {
+            location.reload();
         }
-        autoReload && location.reload();
+    }
+
+    const api = {
+        langs,
+        untranslatedList,
+        defaultLang: runtimeConfig.defaultLang,
+        getCurrentLang,
+        $t: _$t as I18nFnType<MT, L>,
+        $module,
+        changeLang,
+        configure(config: I18nConfigureProps<L>) {
+            if (config.defaultLang !== undefined) {
+                runtimeConfig.defaultLang = config.defaultLang;
+                api.defaultLang = config.defaultLang;
+            }
+            if (config.autoReload !== undefined) {
+                runtimeConfig.autoReload = config.autoReload;
+            }
+            if (config.storageKey !== undefined) {
+                runtimeConfig.storageKey = config.storageKey;
+            }
+            if (config.storage !== undefined) {
+                runtimeConfig.storage = config.storage;
+            }
+        },
     }
 
     // 创建指定模块的翻译函数
@@ -132,13 +224,5 @@ export function createI18nTool<
         }) as ModuleI18nFnType<MT, L, M>;
     }
 
-    return {
-        langs,
-        untranslatedList,
-        defaultLang,
-        getCurrentLang,
-        $t: _$t as I18nFnType<MT, L>,
-        $module,
-        changeLang,
-    };
+    return api;
 }

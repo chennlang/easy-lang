@@ -74,6 +74,7 @@ describe("I18n Tool 核心功能测试", () => {
 
     beforeEach(() => {
         localStorage.clear();
+        vi.clearAllMocks();
         i18nToolFlat = createI18nTool<typeof testFlatTranslations, TestLangs>({
             defaultLang: "zh-CN",
             langs: ["zh-CN", "en-US"],
@@ -143,6 +144,73 @@ describe("I18n Tool 核心功能测试", () => {
             });
             i18nToolWithReload.changeLang("en-US");
             expect(location.reload).toHaveBeenCalled();
+        });
+
+        test("支持自定义 storage 读取和写入语言", () => {
+            const state: { currentLang?: TestLangs } = {
+                currentLang: "en-US",
+            };
+            const i18nToolWithCustomStorage = createI18nTool<typeof testFlatTranslations, TestLangs>({
+                defaultLang: "zh-CN",
+                langs: ["zh-CN", "en-US"],
+                translations: testFlatTranslations,
+                autoReload: false,
+                storage: {
+                    getLang() {
+                        return state.currentLang;
+                    },
+                    setLang(lang) {
+                        state.currentLang = lang;
+                    },
+                },
+            });
+
+            expect(i18nToolWithCustomStorage.getCurrentLang()).toBe("en-US");
+
+            i18nToolWithCustomStorage.changeLang("zh-CN");
+            expect(state.currentLang).toBe("zh-CN");
+        });
+
+        test("configure 支持更新 storageKey 和 autoReload", () => {
+            const i18nToolWithReload = createI18nTool<typeof testFlatTranslations, TestLangs>({
+                defaultLang: "zh-CN",
+                langs: ["zh-CN", "en-US"],
+                translations: testFlatTranslations,
+                autoReload: true,
+            });
+
+            i18nToolWithReload.configure({
+                autoReload: false,
+                storageKey: "iframe-lang",
+            });
+
+            localStorage.setItem("iframe-lang", "en-US");
+            expect(i18nToolWithReload.getCurrentLang()).toBe("en-US");
+
+            i18nToolWithReload.changeLang("zh-CN");
+            expect(localStorage.getItem("iframe-lang")).toBe("zh-CN");
+            expect(location.reload).not.toHaveBeenCalled();
+        });
+
+        test("configure 支持更新 storage 和 defaultLang", () => {
+            const state: { currentLang?: TestLangs } = {};
+            i18nToolFlat.configure({
+                defaultLang: "en-US",
+                storage: {
+                    getLang() {
+                        return state.currentLang;
+                    },
+                    setLang(lang) {
+                        state.currentLang = lang;
+                    },
+                },
+            });
+
+            expect(i18nToolFlat.defaultLang).toBe("en-US");
+            expect(i18nToolFlat.getCurrentLang()).toBe("en-US");
+
+            i18nToolFlat.changeLang("zh-CN");
+            expect(state.currentLang).toBe("zh-CN");
         });
     });
 
