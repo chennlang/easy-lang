@@ -4,6 +4,7 @@ import * as path from "path";
 
 // 支持的文件后缀
 const FILE_GLOB = "**/*.{js,jsx,ts,tsx,vue}";
+const SUPPORTED_EXTENSIONS = new Set([".js", ".jsx", ".ts", ".tsx", ".vue"]);
 
 // 默认忽略的文件夹
 const DEFAULT_IGNORES = ["dist", "node_modules", ".next", ".nuxt"];
@@ -31,6 +32,59 @@ function isIgnored(filePath: string, workspaceRoot: string): boolean {
     );
 }
 
+export function isSupportedSourceFile(filePath: string) {
+    return SUPPORTED_EXTENSIONS.has(path.extname(filePath).toLowerCase());
+}
+
+/**
+ * 扫描文本内容，返回所有 $t key 及其位置
+ */
+export function scanTextI18nKeys(text: string, filePath: string): KeyLocation[] {
+    const keyLocations: KeyLocation[] = [];
+    const newlineIndexes: number[] = [];
+
+    for (let i = 0; i < text.length; i++) {
+        if (text[i] === "\n") {
+            newlineIndexes.push(i);
+        }
+    }
+
+    function getPosition(index: number): { line: number; character: number } {
+        let low = 0;
+        let high = newlineIndexes.length;
+
+        while (low < high) {
+            const mid = Math.floor((low + high) / 2);
+            if (newlineIndexes[mid] < index) {
+                low = mid + 1;
+            } else {
+                high = mid;
+            }
+        }
+
+        const line = low;
+        const lineStart = line === 0 ? 0 : newlineIndexes[line - 1] + 1;
+        return { line, character: index - lineStart };
+    }
+
+    let match;
+    I18N_REGEX.lastIndex = 0;
+    while ((match = I18N_REGEX.exec(text))) {
+        const key = match[2];
+        const { line, character } = getPosition(match.index);
+
+        keyLocations.push({
+            key,
+            filePath,
+            line,
+            character,
+        });
+    }
+    I18N_REGEX.lastIndex = 0;
+
+    return keyLocations;
+}
+
 /**
  * 扫描单个文件，返回该文件中所有 $t key 及其位置
  */
@@ -42,43 +96,12 @@ export function scanSingleFileI18nKeys(filePath: string): KeyLocation[] {
         return keyLocations;
     }
 
-    const ext = path.extname(filePath).toLowerCase();
-    const supportedExts = [".js", ".jsx", ".ts", ".tsx", ".vue"];
-    if (!supportedExts.includes(ext)) {
+    if (!isSupportedSourceFile(filePath)) {
         return keyLocations;
     }
 
     try {
-        const content = fs.readFileSync(filePath, "utf8");
-        const lines = content.split("\n");
-
-        let match;
-        I18N_REGEX.lastIndex = 0; // 重置正则状态
-        while ((match = I18N_REGEX.exec(content))) {
-            const key = match[2];
-            const matchIndex = match.index;
-
-            // 计算行号和列号
-            let line = 0;
-            let character = 0;
-            let currentIndex = 0;
-
-            for (let i = 0; i < lines.length; i++) {
-                if (currentIndex + lines[i].length >= matchIndex) {
-                    line = i;
-                    character = matchIndex - currentIndex;
-                    break;
-                }
-                currentIndex += lines[i].length + 1; // +1 for newline
-            }
-
-            keyLocations.push({
-                key,
-                filePath,
-                line,
-                character,
-            });
-        }
+        return scanTextI18nKeys(fs.readFileSync(filePath, "utf8"), filePath);
     } catch (error) {
         console.error(`Error scanning file ${filePath}:`, error);
     }
@@ -122,6 +145,24 @@ export function readTranslatedKeys(translationPath: string): Set<string> {
     return new Set(Object.keys(json));
 }
 
+export function classifyKeyLocations(
+    allKeyLocations: KeyLocation[],
+    translatedKeys: Set<string>
+): { untranslated: KeyLocation[]; translated: KeyLocation[] } {
+    const untranslated: KeyLocation[] = [];
+    const translated: KeyLocation[] = [];
+
+    for (const keyLocation of allKeyLocations) {
+        if (translatedKeys.has(keyLocation.key)) {
+            translated.push(keyLocation);
+        } else {
+            untranslated.push(keyLocation);
+        }
+    }
+
+    return { untranslated, translated };
+}
+
 /**
  * 获取未翻译和已翻译 key 列表及其位置
  */
@@ -131,17 +172,7 @@ export async function getI18nKeyStatusWithLocation(
 ) {
     const allKeyLocations = await scanI18nKeysWithLocation(workspaceRoot);
     const translatedKeys = readTranslatedKeys(translationPath);
-    const untranslated: KeyLocation[] = [];
-    const translated: KeyLocation[] = [];
-
-    for (const keyLocation of allKeyLocations) {
-        if (translatedKeys.has(keyLocation.key)) {
-            translated.push(keyLocation);
-        } else {
-            untranslated.push(keyLocation);
-        }
-    }
-    return { untranslated, translated };
+    return classifyKeyLocations(allKeyLocations, translatedKeys);
 }
 
 /**
@@ -151,21 +182,9 @@ export function getSingleFileI18nKeyStatus(
     filePath: string,
     translationPath: string
 ) {
-    console.log("filePath", filePath);
-    console.log("translationPath", translationPath);
     const allKeyLocations = scanSingleFileI18nKeys(filePath);
     const translatedKeys = readTranslatedKeys(translationPath);
-    const untranslated: KeyLocation[] = [];
-    const translated: KeyLocation[] = [];
-
-    for (const keyLocation of allKeyLocations) {
-        if (translatedKeys.has(keyLocation.key)) {
-            translated.push(keyLocation);
-        } else {
-            untranslated.push(keyLocation);
-        }
-    }
-    return { untranslated, translated };
+    return classifyKeyLocations(allKeyLocations, translatedKeys);
 }
 
 /**

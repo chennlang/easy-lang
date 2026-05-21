@@ -7,7 +7,8 @@
     "main": "./dist/extension.js",
     "scripts": {
         "compile": "tsc -p .",
-        "test": "echo \"Error: no test specified\" && exit 1",
+        "type-check": "tsc -p . --noEmit",
+        "test": "vitest run",
         "build": "pnpm run compile && pnpm exec vsce package"
     },
     "engines": {
@@ -128,7 +129,8 @@
         "@types/node-fetch": "^2.6.12",
         "@types/vscode": "^1.70.0",
         "@vscode/vsce": "^3.4.2",
-        "typescript": "^5.0.0"
+        "typescript": "^5.0.0",
+        "vitest": "^3.1.4"
     },
     "keywords": [],
     "author": "",

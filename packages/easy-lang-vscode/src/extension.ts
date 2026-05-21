@@ -6,9 +6,14 @@ import { TranslateOptions } from "./translator";
 import { KeyLocation } from "./scanner";
 import { SettingsPanel } from "./settingsView";
 
-export function activate(context: vscode.ExtensionContext) {
-    vscode.window.showInformationMessage("Easy Lang 插件已激活！");
+function reportWatcherError(action: string, error: unknown) {
+    console.error(
+        `${action}: ${error instanceof Error ? error.message : String(error)}`,
+        error
+    );
+}
 
+export function activate(context: vscode.ExtensionContext) {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders) {
         vscode.window.showWarningMessage(
@@ -39,13 +44,137 @@ export function activate(context: vscode.ExtensionContext) {
         showCollapseAll: true,
     });
 
-    context.subscriptions.push(treeView);
+    let hasStartedGlobalIndex = false;
+    const treeViewVisibilitySubscription = treeView.onDidChangeVisibility((event) => {
+        if (event.visible && !hasStartedGlobalIndex) {
+            hasStartedGlobalIndex = true;
+            void sidebarProvider.refresh().catch((error) => {
+                reportWatcherError("首次显示侧边栏刷新国际化数据失败", error);
+            });
+        }
+    });
+
+    let currentFileRefreshTimer: NodeJS.Timeout | undefined;
+
+    function scheduleCurrentFileRefresh(document?: vscode.TextDocument) {
+        sidebarProvider.invalidateCurrentFileRefresh();
+
+        if (currentFileRefreshTimer) {
+            clearTimeout(currentFileRefreshTimer);
+        }
+
+        currentFileRefreshTimer = setTimeout(() => {
+            currentFileRefreshTimer = undefined;
+            void sidebarProvider.refreshCurrentFileData(document).catch((error) => {
+                console.error("刷新当前文件国际化数据失败:", error);
+            });
+        }, 300);
+    }
+
+    context.subscriptions.push({
+        dispose: () => {
+            if (currentFileRefreshTimer) {
+                clearTimeout(currentFileRefreshTimer);
+                currentFileRefreshTimer = undefined;
+            }
+        },
+    });
+
+    context.subscriptions.push(treeView, treeViewVisibilitySubscription, sidebarProvider);
+
+    const sourceWatcher = vscode.workspace.createFileSystemWatcher(
+        "**/*.{js,jsx,ts,tsx,vue}"
+    );
+    context.subscriptions.push(
+        sourceWatcher,
+        sourceWatcher.onDidCreate((uri) => {
+            void sidebarProvider.updateIndexedFile(uri).catch((error) => {
+                reportWatcherError("更新新增源文件索引失败", error);
+            });
+        }),
+        sourceWatcher.onDidChange((uri) => {
+            void sidebarProvider.updateIndexedFile(uri).catch((error) => {
+                reportWatcherError("更新变更源文件索引失败", error);
+            });
+        }),
+        sourceWatcher.onDidDelete((uri) => {
+            void sidebarProvider.removeIndexedFile(uri).catch((error) => {
+                reportWatcherError("移除源文件索引失败", error);
+            });
+        })
+    );
+
+    const translationWatcher = vscode.workspace.createFileSystemWatcher(
+        "**/*.json"
+    );
+
+    function refreshTranslationDataWhenMatched(
+        uri: vscode.Uri,
+        action: string
+    ) {
+        void sidebarProvider.isTranslationFile(uri).then((isTranslationFile) => {
+            if (!isTranslationFile) return;
+
+            return sidebarProvider.refreshTranslationData().catch((error) => {
+                reportWatcherError(action, error);
+            });
+        }).catch((error) => {
+            reportWatcherError(action, error);
+        });
+    }
+
+    context.subscriptions.push(
+        translationWatcher,
+        translationWatcher.onDidCreate((uri) => {
+            refreshTranslationDataWhenMatched(uri, "刷新新增翻译数据失败");
+        }),
+        translationWatcher.onDidChange((uri) => {
+            refreshTranslationDataWhenMatched(uri, "刷新变更翻译数据失败");
+        }),
+        translationWatcher.onDidDelete((uri) => {
+            refreshTranslationDataWhenMatched(uri, "刷新删除翻译数据失败");
+        })
+    );
+
+    const configWatcher = vscode.workspace.createFileSystemWatcher(
+        "**/.vscode/easy-lang.json"
+    );
+    context.subscriptions.push(
+        configWatcher,
+        configWatcher.onDidCreate(() => {
+            void sidebarProvider.refreshTranslationData().catch((error) => {
+                reportWatcherError("刷新新增 Easy Lang 配置失败", error);
+            });
+        }),
+        configWatcher.onDidChange(() => {
+            void sidebarProvider.refreshTranslationData().catch((error) => {
+                reportWatcherError("刷新变更 Easy Lang 配置失败", error);
+            });
+        }),
+        configWatcher.onDidDelete(() => {
+            void sidebarProvider.refreshTranslationData().catch((error) => {
+                reportWatcherError("刷新删除 Easy Lang 配置失败", error);
+            });
+        })
+    );
 
     // 注册刷新命令
     context.subscriptions.push(
         vscode.commands.registerCommand("easy-lang.refresh", async () => {
-            await sidebarProvider.refresh();
-            vscode.window.showInformationMessage("已刷新国际化数据");
+            try {
+                const result = await sidebarProvider.refresh();
+                if (result === "completed") {
+                    vscode.window.showInformationMessage("已刷新国际化数据");
+                } else if (result === "cancelled") {
+                    vscode.window.showInformationMessage("刷新国际化数据已取消");
+                }
+            } catch (error) {
+                vscode.window.showErrorMessage(
+                    `刷新国际化数据失败: ${
+                        error instanceof Error ? error.message : String(error)
+                    }`
+                );
+            }
         })
     );
 
@@ -138,13 +267,7 @@ export function activate(context: vscode.ExtensionContext) {
     // 设置文件监听器
     context.subscriptions.push(
         vscode.window.onDidChangeActiveTextEditor((editor) => {
-            if (editor) {
-                sidebarProvider.refreshCurrentFileData(
-                    editor.document.uri.fsPath
-                );
-            } else {
-                sidebarProvider.refreshCurrentFileData();
-            }
+            scheduleCurrentFileRefresh(editor?.document);
         })
     );
 
@@ -153,31 +276,10 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.workspace.onDidChangeTextDocument((event) => {
             const activeEditor = vscode.window.activeTextEditor;
             if (activeEditor && event.document === activeEditor.document) {
-                // 使用防抖避免频繁更新，延迟500ms
-                setTimeout(() => {
-                    const currentActiveEditor = vscode.window.activeTextEditor;
-                    if (
-                        currentActiveEditor &&
-                        currentActiveEditor.document === event.document
-                    ) {
-                        sidebarProvider.refreshCurrentFileData(
-                            event.document.uri.fsPath
-                        );
-                    }
-                }, 500);
+                scheduleCurrentFileRefresh(event.document);
             }
         })
     );
-
-    // 初始化当前文件数据
-    const activeEditor = vscode.window.activeTextEditor;
-    if (activeEditor) {
-        sidebarProvider.refreshCurrentFileData(
-            activeEditor.document.uri.fsPath
-        );
-    } else {
-        sidebarProvider.refreshCurrentFileData();
-    }
 }
 
 export function deactivate() {}
