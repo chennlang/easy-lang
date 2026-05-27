@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm *)",
+      "Bash(git *)",
+      "Bash(python3 *)"
+    ]
+  }
+}
