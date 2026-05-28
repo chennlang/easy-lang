@@ -21,6 +21,10 @@ npm install easy-lang
 yarn add easy-lang
 ```
 
+## AI/Codex Skill
+
+复制给 AI 自动安装本仓库的 Codex skill：`请安装 GitHub 仓库 chennlang/easy-lang 中的 Codex skill，路径为 skills/easy-lang-app-i18n，安装后使用 $easy-lang-app-i18n 帮我在应用中接入 easy-lang 国际化。`
+
 ## 快速开始
 
 ## 建议的目录结构
