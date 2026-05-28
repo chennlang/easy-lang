@@ -1,0 +1,4 @@
+interface:
+  display_name: "Easy Lang App I18n"
+  short_description: "Use easy-lang in apps correctly"
+  default_prompt: "Use $easy-lang-app-i18n to add type-safe i18n to this app with easy-lang."
