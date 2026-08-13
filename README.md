@@ -9,6 +9,8 @@
 - 支持 React 项目无缝集成
 - 自动收集未翻译的 key，便于补全
 - 支持变量替换
+- 支持多模块翻译，按功能模块拆分翻译文件
+- 支持运行时动态配置（configure）与自定义存储
 - 轻量无第三方依赖（React 集成需 `zustand`）
 
 ## 安装
@@ -23,7 +25,20 @@ yarn add easy-lang
 
 ## AI/Codex Skill
 
-复制给 AI 自动安装本仓库的 Codex skill：`请安装 GitHub 仓库 chennlang/easy-lang 中的 Codex skill，路径为 skills/easy-lang-app-i18n，安装后使用 $easy-lang-app-i18n 帮我在应用中接入 easy-lang 国际化。`
+复制给 AI 自动安装本仓库的 Codex skill：
+
+- 应用接入 easy-lang 国际化：`请安装 GitHub 仓库 chennlang/easy-lang 中的 Codex skill，路径为 skills/easy-lang-app-i18n，安装后使用 $easy-lang-app-i18n 帮我在应用中接入 easy-lang 国际化。`
+- 配置 easy-lang-vscode 插件：`请安装 GitHub 仓库 chennlang/easy-lang 中的 Codex skill，路径为 skills/easy-lang-vscode-config，安装后使用 $easy-lang-vscode-config 帮我生成 easy-lang-vscode 插件所需的配置文件（.vscode/easy-lang.json、easyCode 设置、locales/translation.json）。`
+
+## VSCode 插件（可选）
+
+可选安装，配合 easy-lang 使用。安装后可在 VSCode 侧边栏自动收集和管理国际化文本，并一键调用 **Google 免费翻译** 或 **自定义大模型接口** 自动翻译。
+
+1. 下载插件包：`packages/easy-lang-vscode/easy-lang-vscode-0.0.5.vsix.zip`
+2. 解压上面的文件，得到 `easy-lang-vscode-0.0.5.vsix`
+3. 打开 VSCode，按 `Cmd+Shift+P`（Windows 为 `Ctrl+Shift+P`）打开命令面板，执行 **Extensions: Install from VSIX...**，选择解压出的 `.vsix` 文件完成安装
+
+详细配置说明见插件文档：[easy-lang-vscode/README.md](packages/easy-lang-vscode/README.md)。
 
 ## 快速开始
 
@@ -147,6 +162,84 @@ function App() {
 ```ts
 i18n.$t("欢迎, {name}", { name: "Tom" }); // => "Welcome, Tom!"
 ```
+
+## 多模块翻译
+
+大型应用可把翻译按功能模块拆分，便于各团队独立维护。顶层是模块名，然后是 key，再是语言：
+
+```ts
+const translations = {
+  default: {
+    "保存": { "zh_CN": "保存", "zh_HK": "保存", "en": "Save" }
+  },
+  billing: {
+    "发票": { "zh_CN": "发票", "zh_HK": "發票", "en": "Invoice" },
+    "合计 {amount}": { "zh_CN": "合计 {amount}", "zh_HK": "合計 {amount}", "en": "Total {amount}" }
+  }
+} as const;
+
+const i18n = createI18nTool({
+  defaultLang: "en",
+  langs: ["zh_CN", "zh_HK", "en"],
+  translations,
+});
+
+// 不带 module 参数只查 default 模块
+i18n.$t("保存"); // => "Save"
+
+// 方式一：通过 { module } 指定模块
+i18n.$t("发票", { module: "billing" }); // => "Invoice"
+
+// 方式二：$module() 生成模块专属翻译函数，更简洁
+const billingT = i18n.$module("billing");
+billingT("发票"); // => "Invoice"
+billingT("合计 {amount}", { amount: "$42" }); // => "Total $42"
+```
+
+> 类型上：不带 `module` 的 `$t("...")` 只允许 default 模块的 key；带 `{ module: "xxx" }` 或使用 `$module("xxx")` 时只允许对应模块的 key，可享受完整的类型提示。
+
+## 强制指定翻译语言
+
+`$t`（以及 `$module` 生成的函数）的第三个参数可临时覆盖当前语言，用于指定场景：
+
+```ts
+i18n.$t("保存", {}, "zh_HK"); // => "保存"（强制繁体）
+```
+
+## 运行时配置 configure()
+
+可在运行时动态调整配置，无需重建实例：
+
+```ts
+i18n.configure({
+  defaultLang: "zh_CN",
+  autoReload: false,        // 改为响应式更新，不刷新页面
+  storageKey: "tenant-lang", // 自定义存储 key
+});
+```
+
+## 自定义语言存储
+
+默认使用 `localStorage`（key 为 `lang`）。当语言来自 query 参数、宿主应用、cookie 桥或已有设置中心时，可自定义 storage：
+
+```ts
+const i18n = createI18nTool({
+  defaultLang: "en",
+  langs: ["zh_CN", "zh_HK", "en"],
+  translations,
+  storage: {
+    getLang({ defaultLang, langs, storageKey }) {
+      const stored = localStorage.getItem(storageKey);
+      return stored && langs.includes(stored) ? stored : defaultLang;
+    },
+    setLang(lang, { storageKey }) {
+      localStorage.setItem(storageKey, lang);
+    },
+  },
+});
+```
+
+> `getLang` 返回 `null` 或 `undefined` 时，会回退到 `defaultLang`。SSR 场景下（无 `window`）会自动安全降级。
 
 ## 自动收集未翻译 key
 

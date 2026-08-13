@@ -1,0 +1,4 @@
+interface:
+  display_name: "Easy Lang VSCode Config"
+  short_description: "Generate easy-lang-vscode config files"
+  default_prompt: "Use $easy-lang-vscode-config to generate the .vscode/easy-lang.json, easyCode settings, and locales/translation.json for the Easy Lang VSCode plugin."
